@@ -5,8 +5,9 @@ from .models import (Favorite, Ingredient, IngredientsForRecipe,
 
 
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'measurement_unit')
+    list_display = ('name', 'measurement_unit',)
     search_fields = ('name',)
+    list_filter = ('name',)
 
 
 class IngredientForRecipeAdmin(admin.TabularInline):
@@ -15,13 +16,18 @@ class IngredientForRecipeAdmin(admin.TabularInline):
 
 
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('author', 'name')
+    list_display = ('author', 'name', 'favorites', )
     list_filter = ('author', 'name', 'tags')
+    search_fields = ('author',)
     exclude = ('ingredients',)
+    inlines = [IngredientForRecipeAdmin, ]
 
-    inlines = [
-        IngredientForRecipeAdmin,
-    ]
+    def favorites(self, obj):
+        """Получение количества добавлений рецепта в избранное."""
+
+        return Favorite.objects.filter(recipe=obj).count()
+
+    favorites.short_description = "Количество добавлений в избранное."
 
 
 class TagAdmin(admin.ModelAdmin):
