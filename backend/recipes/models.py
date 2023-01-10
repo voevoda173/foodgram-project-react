@@ -2,12 +2,9 @@ from colorfield.fields import ColorField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
+from api.constants import (MAX_COOK_TIME_VALUE, MAX_COOK_TIME_VALUE_MSG,
+                           MIN_COOK_TIME_VALUE, MIN_COOK_TIME_VALUE_MSG)
 from users.models import CustomUser
-
-MIN_COOK_TIME_VALUE = 1
-MAX_COOK_TIME_VALUE = 480
-MIN_COOK_TIME_VALUE_MSG = 'Значение должно быть не меньше "1".'
-MIN_COOK_TIME_VALUE_MSG = 'Готовить 8 часов? Такой рецепт тут не нужен!'
 
 
 class Tag(models.Model):
@@ -116,7 +113,7 @@ class Recipe(models.Model):
             MinValueValidator(
                 MIN_COOK_TIME_VALUE, message=MIN_COOK_TIME_VALUE_MSG),
             MaxValueValidator(
-                MAX_COOK_TIME_VALUE, message=MIN_COOK_TIME_VALUE_MSG),
+                MAX_COOK_TIME_VALUE, message=MAX_COOK_TIME_VALUE_MSG),
         ],
         null=False,
         help_text='Введите время приготовления блюда в минутах',

@@ -1,23 +1,116 @@
+from django.contrib.auth import get_user_model
 from django.db.models import F
 from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import (Favorite, Ingredient,
-                            IngredientsForRecipe, Tag, Recipe, ShoppingList)
-from users.serializers import CustomUserSerializer
+from api.constants import (ERROR_NAME_MSG, MIN_COOKING_TIME, MIN_INGR_ERR_MSG,
+                           MIN_INGR_MSG, MIN_VALUE_MSG, NO_UNIQUE_EMAIL_MSG,
+                           NO_UNIQUE_INGR_MSG, NO_UNIQUE_NAME_MSG,
+                           NO_UNIQUE_TAG_MSG, TYPE_ERROR_MSG)
+from recipes.models import (Favorite, Ingredient, IngredientsForRecipe, Recipe,
+                            ShoppingList, Tag)
+from users.models import CustomUser, Follow
 
 User = get_user_model()
 
-MIN_COOKING_TIME = 1
-MIN_VALUE_MSG = 'Время приготовления меньше 1'
-TYPE_ERROR_MSG = 'Введенное значение не является числом.'
-MIN_INGR_MSG = 1
-NO_UNIQUE_TAG_MSG = 'Такой тег уже использован.'
-MIN_INGR_ERR_MSG = 'Количество ингредиента должно быть больше 0.'
-NO_UNIQUE_INGR_MSG = 'Такой ингредиент уже добавлен.'
+
+class CustomUserSerializer(serializers.ModelSerializer):
+    """Сериалайзер пользователя."""
+
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = ('email', 'id', 'username', 'first_name',
+                  'last_name', 'is_subscribed')
+
+    def get_is_subscribed(self, obj):
+
+        request = self.context.get('request')
+
+        if request.user.is_anonymous or request is None:
+            return False
+
+        return Follow.objects.filter(user=request.user, author=obj.id).exists()
+
+
+class RegSerializer(serializers.ModelSerializer):
+    """Сериалайзер, применяемый при регистрации пользователя."""
+
+    email = serializers.EmailField(required=True, max_length=254)
+    username = serializers.CharField(required=True, max_length=150)
+    first_name = serializers.CharField(required=True, max_length=150)
+    last_name = serializers.CharField(required=True, max_length=150)
+
+    def validate_email(self, value):
+
+        lower_email = value.lower()
+
+        if CustomUser.objects.filter(email=lower_email).exists():
+            raise serializers.ValidationError(NO_UNIQUE_EMAIL_MSG)
+
+        return lower_email
+
+    def validate_username(self, value):
+
+        if value.lower() == 'me':
+            raise serializers.ValidationError(ERROR_NAME_MSG)
+
+        if CustomUser.objects.filter(username=value).exists():
+            raise serializers.ValidationError(NO_UNIQUE_NAME_MSG)
+
+        return value
+
+    class Meta:
+        model = CustomUser
+        fields = ('email', 'id', 'username', 'first_name',
+                  'last_name', 'password')
+
+
+class FollowRecipeSerializer(serializers.ModelSerializer):
+    """Сериалайзер для рецептов подписчика."""
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time', )
+
+
+class FollowerSerializer(serializers.Serializer):
+    """Сериалайзер подписчика."""
+
+    email = serializers.ReadOnlyField()
+    id = serializers.ReadOnlyField()
+    username = serializers.ReadOnlyField()
+    first_name = serializers.ReadOnlyField()
+    last_name = serializers.ReadOnlyField()
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Follow
+        fields = ('id', 'email', 'username', 'first_name', 'last_name',
+                  'is_subscribed', 'recipes', 'recipes_count')
+
+    def get_is_subscribed(self, obj):
+
+        request = self.context.get('request')
+
+        if request.user.is_anonymous or request is None:
+            return False
+
+        return Follow.objects.filter(user=request.user, author=obj.id).exists()
+
+    def get_recipes(self, obj):
+
+        recipes = Recipe.objects.filter(author=obj)
+
+        return FollowRecipeSerializer(recipes, many=True).data
+
+    def get_recipes_count(self, author):
+        return Recipe.objects.filter(author=author).count()
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -117,16 +210,12 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_is_favorited(self, obj):
         request = self.context.get('request')
-        if request is None or request.user.is_anonymous:
-            return False
         return Favorite.objects.filter(
             user=request.user, recipe=obj
         ).exists()
 
     def get_is_in_shopping_cart(self, obj):
         request = self.context.get('request')
-        if request is None or request.user.is_anonymous:
-            return False
         return ShoppingList.objects.filter(
             user=request.user, recipe=obj
         ).exists()

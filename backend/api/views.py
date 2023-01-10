@@ -1,30 +1,107 @@
 from datetime import datetime as dt
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
 from django.http.response import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from rest_framework import status, viewsets
-
 from rest_framework.decorators import action
-from rest_framework.permissions import (IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.filters import RecipeFilter, IngredientSearchFilter
+from api.constants import (NO_RECIPE_MSG, NO_SUBSCIBE_MSG,
+                           NO_UNIQUE_SUBSCRIBE_MSG, RECIPE_ADDED_MSG,
+                           RECIPE_DELETE_MSG, YOUSELF_SUBSCRIBE_DEL_MSG,
+                           YOUSELF_SUBSCRIBE_MSG)
+from api.filters import IngredientSearchFilter, RecipeFilter
+from api.paginators import PageNumberPaginationMod
+from api.permissions import IsAdminOrReadOnly, IsAuthorOrStaff
+from api.serializers import (CustomUserSerializer, FavoriteSerializer,
+                             FollowerSerializer, IngredientSerializer,
+                             RecipeSerializer, ShoppingListSerializer,
+                             ShortRecipeSerializer, TagSerializer)
 from recipes.models import (Favorite, Ingredient, IngredientsForRecipe, Recipe,
                             ShoppingList, Tag)
-from recipes.paginators import PageNumberPaginationMod
-from recipes.permissions import IsAuthorOrStaff, IsAdminOrReadOnly
-from recipes.serializers import (RecipeSerializer,
-                                 FavoriteSerializer, IngredientSerializer,
-                                 ShoppingListSerializer, TagSerializer,
-                                 ShortRecipeSerializer)
+from users.models import Follow
 
-RECIPE_ADDED_MSG = 'Рецепт уже добавлен.'
-NO_RECIPE_MSG = 'Рецепта нет'
-RECIPE_DELETE_MSG = 'Рецепт удален'
+User = get_user_model()
+
+
+class SubsctiptionUserViewSet(UserViewSet):
+    """Набор представлений для подписки."""
+
+    permission_classes = [IsAdminOrReadOnly]
+    queryset = User.objects.all()
+    serializer_class = CustomUserSerializer
+    pagination_class = LimitOffsetPagination
+
+    def perform_create(self, serializer):
+        hash_pwd = make_password(serializer.validated_data.get('password'))
+        serializer.save(password=hash_pwd)
+
+    @action(methods=['post'], detail=True,
+            permission_classes=[IsAuthenticated])
+    def subscribe(self, request, id=None):
+        """Функция подписки на автора."""
+
+        user = request.user
+        author = get_object_or_404(User, pk=id)
+
+        if user == author:
+            return Response({
+                'errors': YOUSELF_SUBSCRIBE_MSG
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if Follow.objects.filter(user=user, author=author).exists():
+            return Response({
+                'errors': NO_UNIQUE_SUBSCRIBE_MSG
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        Follow.objects.create(
+            user=user, author=author
+        )
+        serializer = FollowerSerializer(
+            author, context={'request': request}
+        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @subscribe.mapping.delete
+    def delete_subscribe(self, request, id=None):
+        """Функции отписки от автора."""
+
+        user = request.user
+        author = get_object_or_404(User, pk=id)
+
+        if user == author:
+            return Response({
+                'errors': YOUSELF_SUBSCRIBE_DEL_MSG
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        subscribe = Follow.objects.filter(user=user, author=author)
+
+        if not subscribe.exists():
+            return Response({
+                'errors': NO_SUBSCIBE_MSG
+            }, status=status.HTTP_400_BAD_REQUEST)
+        subscribe.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(methods=['get'], detail=False,
+            permission_classes=[IsAuthenticated], url_path='subscriptions')
+    def subscriptions(self, request):
+        subscriptions = User.objects.filter(following__user=self.request.user)
+        page = self.paginate_queryset(subscriptions)
+        serializer = FollowerSerializer(page, many=True,
+                                        context={'request': request})
+
+        return self.get_paginated_response(serializer.data)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -51,7 +128,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrStaff, )
+    permission_classes = (IsAuthorOrStaff, )
     pagination_class = PageNumberPaginationMod
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter

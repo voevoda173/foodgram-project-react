@@ -22,15 +22,18 @@ class Command(BaseCommand):
             with open(os.path.join(DATA_ROOT, options['filename']), 'r',
                       encoding='utf-8') as f:
                 data = json.load(f)
-                for ingredient in data:
-                    try:
-                        Ingredient.objects.create(name=ingredient["name"],
-                                                  measurement_unit=ingredient[
-                                                      "measurement_unit"])
-                    except IntegrityError:
-                        print(f'{ingredient["name"]}, '
-                              f'{ingredient["measurement_unit"]} '
-                              f'был добавлен ранее!')
+                ingredients = [
+                    Ingredient(
+                        name=ingredient.get('name'),
+                        measurement_unit=ingredient.get('measurement_unit')
+                    )
+                    for ingredient in data
+                ]
+
+                try:
+                    Ingredient.objects.bulk_create(ingredients)
+                except IntegrityError:
+                    print('Неуникальные элементы не добавлены.')
 
         except FileNotFoundError:
             raise CommandError('Файл не найден!')
