@@ -41,12 +41,14 @@ jobs:
       - name: Push backend to Docker Hub 
         uses: docker/build-push-action@v2
         with:
+          context: ./backend
           file: ./backend/Dockerfile
           push: true
           tags: voevodinal173/foodgram_back:latest
       - name: Push frontend to Docker Hub 
         uses: docker/build-push-action@v2
         with:
+          context: ./frontend
           file: ./frontend/Dockerfile
           push: true
           tags: voevodinal173/foodgram_front:latest
