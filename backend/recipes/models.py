@@ -118,7 +118,7 @@ class Recipe(models.Model):
         ],
         null=False,
         help_text='Введите время приготовления блюда в минутах',
-        )
+    )
 
     author = models.ForeignKey(
         CustomUser,
