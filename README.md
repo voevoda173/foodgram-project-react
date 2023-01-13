@@ -154,8 +154,5 @@ python manage.py createsuperuser
 python manage.py load_db
 ```
 
-### Запуска на сервере ###
-
-
 ## Автор проекта
 - [Алексей Воеводин](https://github.com/voevoda173)
