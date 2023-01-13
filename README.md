@@ -11,7 +11,7 @@
 [![Yandex.Cloud](https://img.shields.io/badge/-Yandex.Cloud-464646?style=flat-square&logo=Yandex.Cloud)](https://cloud.yandex.ru/)
 
 Проект запущен и доступен по [адресу](http://51.250.31.146/recipes)
-### Доступ к панеле администратора
+### Доступ к панели администратора
 
 Имя пользователя: admin
 Пароль: admin
