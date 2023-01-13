@@ -19,3 +19,4 @@ MIN_COOK_TIME_VALUE = 1
 MAX_COOK_TIME_VALUE = 480
 MIN_COOK_TIME_VALUE_MSG = 'Значение должно быть не меньше "1".'
 MAX_COOK_TIME_VALUE_MSG = 'Готовить 8 часов? Такой рецепт тут не нужен!'
+STR_LENGHT = 15

@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from api.constants import STR_LENGHT
+
 
 class CustomUser(AbstractUser):
     """Модель пользователя."""
@@ -13,21 +15,21 @@ class CustomUser(AbstractUser):
     )
 
     email = models.EmailField(
-        "Адрес электронной почты",
+        verbose_name="Адрес электронной почты",
         max_length=254,
         null=False,
         unique=True,
-        help_text='Введите адрес электронной почты'
+        help_text='Введите адрес электронной почты',
     )
     username = models.CharField(
-        "Уникальный юзернейм",
+        verbose_name="Уникальный юзернейм",
         unique=True,
         max_length=150,
         null=False,
         help_text='Введите свой ник.'
     )
     first_name = models.CharField(
-        "Имя",
+        verbose_name="Имя",
         max_length=150,
         null=False,
         help_text='Введите свое имя'
@@ -53,11 +55,12 @@ class CustomUser(AbstractUser):
         verbose_name_plural = "Пользователи"
 
     def __str__(self):
-        return self.username[:15]
+        return self.username[:STR_LENGHT]
 
     @property
     def is_admin(self):
-        return self.is_superuser or self.role == self.ADMIN
+        return (self.is_superuser or self.role == self.ADMIN
+                or self.is_staff)
 
 
 class Follow(models.Model):
@@ -75,7 +78,7 @@ class Follow(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Подписки'
+        verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
         constraints = [
             models.UniqueConstraint(

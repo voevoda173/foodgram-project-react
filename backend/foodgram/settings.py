@@ -6,10 +6,7 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SECRET_KEY = os.getenv(
-    'SECRET_KEY',
-    default='=0z2m7)#j*%1bm90-f$drwcn8c6p--f#08mpl8$9%txk2dl=9e'
-)
+SECRET_KEY = os.getenv('SECRET_KEY', default='key')
 
 DEBUG = False
 
@@ -78,7 +75,7 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'django.contrib.auth.passworvalidation.UserAttributeSimilarityValidator',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',

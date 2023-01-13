@@ -1,6 +1,5 @@
 from datetime import datetime as dt
 
-from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.http.response import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -28,16 +27,14 @@ from api.serializers import (CustomUserSerializer, FavoriteSerializer,
                              ShortRecipeSerializer, TagSerializer)
 from recipes.models import (Favorite, Ingredient, IngredientsForRecipe, Recipe,
                             ShoppingList, Tag)
-from users.models import Follow
-
-User = get_user_model()
+from users.models import CustomUser, Follow
 
 
 class SubsctiptionUserViewSet(UserViewSet):
     """Набор представлений для подписки."""
 
     permission_classes = [IsAdminOrReadOnly]
-    queryset = User.objects.all()
+#    queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
     pagination_class = LimitOffsetPagination
 
@@ -50,24 +47,24 @@ class SubsctiptionUserViewSet(UserViewSet):
     def subscribe(self, request, id=None):
         """Функция подписки на автора."""
 
-        user = request.user
-        author = get_object_or_404(User, pk=id)
+        author = get_object_or_404(CustomUser, pk=id)
 
-        if user == author:
+        if request.user == author:
             return Response({
                 'errors': YOUSELF_SUBSCRIBE_MSG
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        if Follow.objects.filter(user=user, author=author).exists():
+        if Follow.objects.filter(user=request.user,
+                                 author=author).exists():
             return Response({
                 'errors': NO_UNIQUE_SUBSCRIBE_MSG
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        Follow.objects.create(
-            user=user, author=author
+        follow = Follow.objects.create(
+            user=request.user, author=author
         )
         serializer = FollowerSerializer(
-            author, context={'request': request}
+            follow, context={'request': request}
         )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -75,15 +72,14 @@ class SubsctiptionUserViewSet(UserViewSet):
     def delete_subscribe(self, request, id=None):
         """Функции отписки от автора."""
 
-        user = request.user
-        author = get_object_or_404(User, pk=id)
+        author = get_object_or_404(CustomUser, pk=id)
 
-        if user == author:
+        if request.user == author:
             return Response({
                 'errors': YOUSELF_SUBSCRIBE_DEL_MSG
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        subscribe = Follow.objects.filter(user=user, author=author)
+        subscribe = Follow.objects.filter(user=request.user, author=author)
 
         if not subscribe.exists():
             return Response({
@@ -96,7 +92,7 @@ class SubsctiptionUserViewSet(UserViewSet):
     @action(methods=['get'], detail=False,
             permission_classes=[IsAuthenticated], url_path='subscriptions')
     def subscriptions(self, request):
-        subscriptions = User.objects.filter(following__user=self.request.user)
+        subscriptions = Follow.objects.filter(user=request.user)
         page = self.paginate_queryset(subscriptions)
         serializer = FollowerSerializer(page, many=True,
                                         context={'request': request})

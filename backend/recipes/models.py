@@ -3,12 +3,13 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from api.constants import (MAX_COOK_TIME_VALUE, MAX_COOK_TIME_VALUE_MSG,
-                           MIN_COOK_TIME_VALUE, MIN_COOK_TIME_VALUE_MSG)
+                           MIN_COOK_TIME_VALUE, MIN_COOK_TIME_VALUE_MSG,
+                           STR_LENGHT)
 from users.models import CustomUser
 
 
 class Tag(models.Model):
-    """Класс для слздания объектов модели Тэг."""
+    """Класс для создания объектов модели Тэг."""
 
     name = models.CharField(
         verbose_name='Название тэга',
@@ -39,7 +40,7 @@ class Tag(models.Model):
         ordering = ('name', )
 
     def __str__(self):
-        return self.name[:15]
+        return self.name[:STR_LENGHT]
 
 
 class Ingredient(models.Model):
@@ -65,7 +66,7 @@ class Ingredient(models.Model):
         ordering = ('name', )
 
     def __str__(self):
-        return self.name[:15]
+        return self.name[:STR_LENGHT]
 
 
 class Recipe(models.Model):
@@ -179,7 +180,7 @@ class IngredientsForRecipe(models.Model):
         ]
 
     def __str__(self):
-        return (f'{self.ingredient.name} - {self.amount}'
+        return (f'{self.ingredient.name} - {self.amount} '
                 f'({self.ingredient.measurement_unit})')
 
 
