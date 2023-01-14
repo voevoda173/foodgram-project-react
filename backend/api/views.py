@@ -11,7 +11,7 @@ from reportlab.pdfgen import canvas
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedorReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
 from api.constants import (NO_RECIPE_MSG, NO_SUBSCIBE_MSG,
@@ -34,7 +34,6 @@ class SubsctiptionUserViewSet(UserViewSet):
     """Набор представлений для подписки."""
 
     permission_classes = [IsAdminOrReadOnly]
-#    queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
     pagination_class = LimitOffsetPagination
 
@@ -124,7 +123,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    permission_classes = (IsAuthenticatedorReadOnly, IsAuthorOrStaff, )
+    permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrStaff, )
     pagination_class = PageNumberPaginationMod
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
