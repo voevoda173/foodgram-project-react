@@ -228,7 +228,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         page = canvas.Canvas(response)
         page.setFont('Times', size=20)
         page.drawString(120, 800,
-                        f'Список покупок на {dt.today().strftime("%d.%m.%Y")}')
+                        f'Список покупок на {dt.today().strftime("%d.%m.%Y")} '
+                        )
         page.setFont('Times', size=14)
         height = 750
         for i, (name, data) in enumerate(shopping_list.items(), 1):

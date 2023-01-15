@@ -11,7 +11,7 @@ DATA_ROOT = os.path.join(settings.BASE_DIR, 'data')
 
 
 class Command(BaseCommand):
-    help = 'Загрузка ингредиентов из файла CSS в базу данных.'
+    help = 'Загрузка ингредиентов из файла CSV в базу данных.'
 
     def add_arguments(self, parser):
         parser.add_argument('filename', default='ingredients.json', nargs='?',
