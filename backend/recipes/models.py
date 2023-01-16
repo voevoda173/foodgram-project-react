@@ -136,7 +136,7 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ('id', )
+        ordering = ('-pub_date', )
 
     def __str__(self):
         return self.name[:15]
@@ -218,6 +218,7 @@ class ShoppingList(models.Model):
         CustomUser,
         on_delete=models.CASCADE,
         verbose_name='Пользователь',
+        related_name='shopping_list',
     )
 
     recipe = models.ForeignKey(
